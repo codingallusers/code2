@@ -1,0 +1,74 @@
+#Package
+import numpy as np
+from keras.models import Sequential
+from keras.layers import Dense, Embedding, Lambda
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing.sequence import skipgrams
+from keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras import backend as K
+
+
+# Sample text data
+text = "We are learning Continuous Bag of Words model for NLP"
+
+
+# 1. Data Preparation
+# Tokenize the text
+tokenizer = Tokenizer()
+tokenizer.fit_on_texts([text])
+word2id = tokenizer.word_index
+id2word = {v: k for k, v in word2id.items()}
+vocab_size = len(word2id) + 1 # Adding 1 for padding
+
+
+# Convert text to sequences of word IDs
+word_seq = tokenizer.texts_to_sequences([text])[0]
+
+
+# 2. Generate Training Data (CBOW)
+# For CBOW we need context words and the target word
+def generate_context_target_pairs(word_seq, window_size=2):
+    context_pairs = []
+    for i in range(window_size, len(word_seq) - window_size):
+        context = word_seq[i - window_size:i] + word_seq[i + 1:i + 1 + window_size]
+        target = word_seq[i]
+        context_pairs.append((context, target))
+    return context_pairs
+
+window_size = 2
+context_target_pairs = generate_context_target_pairs(word_seq, window_size)
+
+
+# Prepare input and output data for model training
+context_words = np.array([pair[0] for pair in context_target_pairs])
+target_words = np.array([pair[1] for pair in context_target_pairs])
+
+
+# 3. Train the Model (CBOW)
+embedding_dim = 50  # Size of word embeddings
+
+
+
+# Define CBOW model
+model = Sequential()
+model.add(Embedding(input_dim=vocab_size, output_dim=embedding_dim, input_length=2 * window_size))
+model.add(Lambda(lambda x: K.mean(x, axis=1)))  # Mean over context words
+model.add(Dense(vocab_size, activation='softmax'))  # Predict the target word
+
+
+# Compile the model
+model.compile(optimizer='adam', loss='sparse_categorical_crossentropy')
+
+
+# Train the model
+model.fit(context_words, target_words, epochs=100, verbose=2)
+
+
+# 4. Output - Word Embeddings
+word_embeddings = model.get_weights()[0]
+
+
+# Example output: word embedding for 'learning'
+word_id = word2id['learning']
+embedding = word_embeddings[word_id]
+print(f"Word embedding for 'learning': {embedding}")
