@@ -1,0 +1,125 @@
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras.applications import VGG16
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Dense, Flatten
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+import numpy as np
+
+
+
+
+#Pre processing img data 
+dataset_dir = "C:/Users/PRAJAKTA/Desktop/NewDatasets/caltech-101/"
+dataset_datagen = ImageDataGenerator(
+    rescale=1.0 / 255,
+)
+
+# here batch_size is the number of images in each batch
+batch_size = 2000
+dataset_generator = dataset_datagen.flow_from_directory(
+    dataset_dir,
+    target_size=(64, 64),
+    batch_size=batch_size,
+    class_mode='categorical'
+)
+
+
+
+
+# Selecting first batch containing 2000 images as train and second batch containing 2000 images as test data
+x_train, y_train =  dataset_generator[0]
+x_test, y_test = dataset_generator[1]
+
+print(len(x_train))
+print(len(x_test))
+
+
+
+
+
+#a.Load in a pre-trained CNN model trained on a large dataset
+# Load VGG16 without top layers
+base_model = VGG16(weights="imagenet", include_top=False, input_shape=(64, 64, 3))
+
+
+
+
+
+#b. Freeze parameters (weights) in model’s lower convolutional layers
+for layer in base_model.layers:
+   layer.trainable = False
+
+
+
+
+
+#c. Add custom classifier with several layers of trainable parameters to model
+x = Flatten()(base_model.output)
+x = Dense(64, activation='relu')(x)
+predictions = Dense(102, activation='softmax')(x)
+
+# Create the model
+model = Model(inputs=base_model.input, outputs=predictions)
+# Compile the model
+model.compile(optimizer="adam", loss='categorical_crossentropy', metrics=['accuracy'])
+
+
+
+
+
+#d. Train classifier layers on training data available for task
+# Train the model
+model.fit(x_train, y_train, batch_size=64, epochs=10, validation_data=(x_test, y_test))
+
+
+
+
+
+
+#e. Fine-tune hyper parameters and unfreeze more layers as needed
+#base_model = VGG16(weights=weights_path, include_top=False, input_shape=(64, 64, 3))
+base_model = VGG16(weights="imagenet", include_top=False, input_shape=(64, 64, 3))
+# freeze all layers first
+for layer in base_model.layers:
+   layer.trainable = False
+# unfreeze last 4 layers of base model
+for layer in base_model.layers[len(base_model.layers) - 2:]:
+   layer.trainable = True
+# fine-tuning hyper parameters
+x = Flatten()(base_model.output)
+x = Dense(512, activation='relu')(x)
+x = tf.keras.layers.Dropout(0.3)(x)
+predictions = Dense(102, activation='softmax')(x)
+
+# Create the model
+model = Model(inputs=base_model.input, outputs=predictions)
+# Compile the model
+model.compile(optimizer=Adam(learning_rate=0.001), loss='categorical_crossentropy', metrics=['accuracy'])
+# training fine tuned model
+model.fit(x_train, y_train, batch_size=64, epochs=10, validation_data=(x_test, y_test))
+
+
+
+
+
+
+import matplotlib.pyplot as plt
+predicted_value = model.predict(x_test)
+
+
+
+
+
+labels = list(dataset_generator.class_indices.keys())
+
+
+
+
+
+n = 1000
+plt.imshow(x_test[n])
+print("Preditcted: ",labels[np.argmax(predicted_value[n])])
+print("Actual: ", labels[np.argmax(y_test[n])])
+
