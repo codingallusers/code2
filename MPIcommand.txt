@@ -1,0 +1,16 @@
+sudo apt update
+sudo apt install build-essential openmpi-bin openmpi-common libopenmpi-dev
+
+
+mpicc --version
+
+
+mpicc -o mpi_sum mpi_sum.c
+
+
+
+mpirun -np 4 ./mpi_sum
+
+
+
+
