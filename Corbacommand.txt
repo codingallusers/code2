@@ -1,0 +1,39 @@
+1. idlj -fall Calculator.idl
+
+sudo apt update
+sudo apt install openjdk-8-jdk openjdk-8-jre
+
+
+extra:
+
+export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+export PATH=$JAVA_HOME/bin:$PATH
+
+sudo update-alternatives --install /usr/bin/java java /usr/lib/jvm/java-8-openjdk-amd64/bin/java 1080
+sudo update-alternatives --install /usr/bin/javac javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac 1080
+
+
+sudo update-alternatives --config java
+sudo update-alternatives --config javac
+
+
+java -version
+javac -version
+
+
+2. javac *.java CalculatorApp/*.java
+
+3. orbd -ORBInitialPort 1050 -ORBInitialHost localhost
+
+4. new terminal- java CalculatorServer -ORBInitialPort 1050 -ORBInitialHost localhost
+
+5. new terminal- java CalculatorClient -ORBInitialPort 1050 -ORBInitialHost localhost
+
+
+if corba missing: sudo apt install libopenjdk-8-jre-zero libopenjdk-8-jre
+
+
+
+
+
+
