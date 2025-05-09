@@ -1,0 +1,44 @@
+# Install flask-ngrok if needed
+!pip install flask-ngrok
+
+from flask import Flask, jsonify, request
+from flask_ngrok import run_with_ngrok
+import threading
+
+# Create Flask app
+app = Flask(__name__)
+run_with_ngrok(app)  # Run it on Ngrok (for easy access)
+
+# Define a simple API endpoint
+@app.route('/greet', methods=['GET'])
+def greet():
+    name = request.args.get('name', 'World')
+    return jsonify({"message": f"Hello, {name}!"})
+
+# Start the server in a background thread
+def run_app():
+    app.run()
+
+# Start Flask app
+thread = threading.Thread(target=run_app)
+thread.start()
+
+
+
+
+import requests
+
+# After the server starts, replace this with your actual ngrok URL
+# For local testing, you can keep it as:
+base_url = 'http://127.0.0.1:5000'  # Change this to your ngrok URL if using Ngrok
+
+# Example usage
+def get_greeting(name):
+    response = requests.get(f"{base_url}/greet", params={"name": name})
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return {"error": "Something went wrong"}
+
+# Try calling the API
+print(get_greeting('code running successfully!!'))
